@@ -649,12 +649,20 @@ function medNHS(cv: Canvas, x: number, y: number, w: number, h: number) {
 }
 function medMeldrum(cv: Canvas, x: number, y: number, w: number, h: number) {
   cv.rect(x, y, w, h, [26, 20, 34]);
-  // stage lights
+  // spotlight dots along the top (no beams — the old triangular beams
+  // read as pyramids, wrong for a music legend)
   for (let i = 0; i < 3; i++) {
-    const lx = x + 30 + i * 55;
-    cv.poly([[lx, y + 4], [lx - 18, y + h - 8], [lx + 18, y + h - 8]], [255, 210, 120]);
-    cv.circle(lx, y + 6, 4, [255, 230, 150]);
+    const lx = x + 84 + i * 16;
+    cv.circle(lx, y + 6, 3, [255, 230, 150]);
   }
+  // vinyl record, right side
+  const rcx = x + w - 30, rcy = y + h / 2;
+  cv.circle(rcx, rcy, 20, [12, 12, 14]);
+  cv.ring(rcx, rcy, 20, [90, 90, 100], 1);
+  cv.ring(rcx, rcy, 16, [70, 70, 80], 1);
+  cv.ring(rcx, rcy, 11, [70, 70, 80], 1);
+  cv.circle(rcx, rcy, 6, [200, 30, 40]);
+  cv.circle(rcx, rcy, 2, [235, 235, 235]);
   // mic stand + mic
   cv.vline(x + w / 2, y + 26, h - 40, [200, 200, 200], 2);
   cv.circle(x + w / 2, y + 22, 8, [220, 220, 220]);
@@ -841,18 +849,31 @@ function main() {
     cv.rect(bx, ry, w, 14, col);
     bx += w;
   }
-  // region labels under bar
+  // region labels under bar: row 1 for segments wide enough to hold their
+  // label; narrow segments (MIDDLE EAST, AFRICA) go on a second row,
+  // right-aligned with a color chip, so all 7 regions are labelled.
   let lx = M + 150;
+  const narrow: [string, number, RGB][] = [];
   for (const [name, n, col] of REGIONS) {
     const w = barW * n / total;
     const lab = name + " " + n;
     const lw = F_INT.textWidth(lab, 8.5);
     if (w > lw + 4) F_INT.draw(cv, lab, lx + (w - lw) / 2, ry + 26, 8.5, INK);
+    else narrow.push([name, n, col]);
     lx += w;
   }
-  cv.hline(M, ry + 32, CW, RULE, 1);
+  let rx = M + CW;
+  for (let i = narrow.length - 1; i >= 0; i--) {
+    const [name, n, col] = narrow[i];
+    const lab = name + " " + n;
+    const lw = F_INT.textWidth(lab, 8);
+    cv.rect(rx - lw - 12, ry + 31, 7, 7, col);
+    F_INT.draw(cv, lab, rx - lw, ry + 38, 8, INK);
+    rx -= lw + 12 + 14;
+  }
+  cv.hline(M, ry + 44, CW, RULE, 1);
   // ---- heroes
-  const hy = 236, hw = (CW - 2 * 14) / 3, hh = 212;
+  const hy = 246, hw = (CW - 2 * 14) / 3, hh = 212;
   HEROES.forEach((st, i) => {
     const x = M + i * (hw + 14);
     // illustration
@@ -898,12 +919,12 @@ function main() {
   F_ITAL.draw(cv, "Markets fell, a minister fell, and the war's toll rose again — while trials, talks and launches carried on.", M + 150, by + 13, 13.5, INK);
   cv.hline(M, by + 22, CW, RULE, 1);
   // ---- map + more stories
-  const py = by + 32, ph = 132;
+  const py = by + 32, ph = 122;
   const mapW = 470, mapX = M, mapY = py;
   cv.rect(mapX, mapY, mapW, ph, NAVY);
   // graticule
   for (let g = 0; g < 8; g++) cv.vline(mapX + 30 + g * 58, mapY + 8, ph - 16, [50, 68, 108], 1);
-  for (let g = 0; g < 4; g++) cv.hline(mapX + 8, mapY + 24 + g * 40, mapW - 16, [50, 68, 108], 1);
+  for (let g = 0; g < 4; g++) cv.hline(mapX + 8, mapY + 24 + g * 30, mapW - 16, [50, 68, 108], 1);
   // continents (rough equirectangular polygons, lon -170..190, lat -55..83)
   const px = (lon: number) => mapX + 8 + (lon + 170) / 360 * (mapW - 16);
   const py2 = (lat: number) => mapY + 6 + (83 - lat) / 138 * (ph - 12);
