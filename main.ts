@@ -811,6 +811,13 @@ const MAP_PINS: [string, number, number][] = [ // name, lon, lat
   ["Oklahoma", -97.5, 35.5], ["Paris", 2.35, 48.85], ["Helsinki", 24.9, 60.2],
   ["Tokyo", 139.7, 35.7], ["Tripoli", 13.2, 32.9],
 ];
+// Display offsets (px, map-relative) for pins whose true spots would collide:
+// the numbered circle is drawn at true+offset, with a leader line back to a
+// small white dot marking the true position. Offsets verified: no two drawn
+// circles closer than 15px (radius 7), all inside the map rect.
+const PIN_OFF: Record<number, [number, number]> = {
+  2: [6, 6], 5: [12, 8], 9: [-16, -10], 12: [0, -12], 13: [10, -6],
+};
 
 // ---------------------------------------------------------------- build
 function main() {
@@ -936,12 +943,19 @@ function main() {
     [[113, -22], [122, -14], [132, -12], [142, -11], [146, -19], [150, -23], [153, -27], [150, -37], [140, -38], [130, -32], [124, -33], [115, -32], [113, -22]],
   ];
   for (const poly of land) cv.poly(poly.map(([lo, la]) => [px(lo), py2(la)] as [number, number]), [58, 84, 122]);
-  // pins
+  // pins: numbered circle at true spot, or at true+offset with a leader
+  // line back to a small white dot on the true spot (dense clusters)
   MAP_PINS.forEach(([name, lon, lat], i) => {
     const x = px(lon), y = py2(lat);
-    cv.circle(x, y, 7, RED);
-    cv.ring(x, y, 7, [255, 255, 255], 1);
-    F_INT.draw(cv, String(i + 1), x - 2.5, y + 3.5, 8, [255, 255, 255]);
+    const off = PIN_OFF[i + 1];
+    const cx = x + (off ? off[0] : 0), cy = y + (off ? off[1] : 0);
+    if (off) {
+      cv.line(x, y, cx, cy, [255, 255, 255], 1);
+      cv.circle(x, y, 2, [255, 255, 255]);
+    }
+    cv.circle(cx, cy, 7, RED);
+    cv.ring(cx, cy, 7, [255, 255, 255], 1);
+    F_INT.draw(cv, String(i + 1), cx - 2.5, cy + 3.5, 8, [255, 255, 255]);
   });
   F_OSW.draw(cv, "WHERE IT HAPPENED", mapX + 10, mapY + 14, 11, [255, 255, 255], 1);
   // map key: two columns of numbered names below title? place at bottom-left inside map
